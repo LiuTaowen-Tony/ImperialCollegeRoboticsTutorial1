@@ -1,12 +1,19 @@
 import time
 from enum import Enum
+from dataclasses import dataclass
 
 from brickpi3 import BrickPi3
-class STATUS(Enum):
-    ALL_GOOD = 1
-    LEFT_SHIFTED = 2
-    RIGHT_SHIFTED = 3
-    TO_TURN = 4
+
+class STATUS: pass
+class ALL_GOOD(STATUS): pass
+class TO_TURN(STATUS): pass
+@dataclass
+class LEFT_SHIFTED(STATUS):
+    value: float
+@dataclass
+class RIGHT_SHIFTED(STATUS):
+    value: float
+
 
 BP = BrickPi3()
 
@@ -42,23 +49,19 @@ def main():
         while True:
             time.sleep(0.2)
 
-            leftMotorCurrentStatus = BP.get_motor_status(LEFT_MOTOR_PORT)
+            leftMotorCurrentStatus  = BP.get_motor_status(LEFT_MOTOR_PORT)
             rightMotorCurrentStatus = BP.get_motor_status(RIGHT_MOTOR_PORT)
-            running_status = checkStatus(leftMotorCurrentStatus, rightMotorCurrentStatus, history)
+            running_status          = checkStatus(leftMotorCurrentStatus, rightMotorCurrentStatus, history)
 
             # probably we need history in future tasks
             history.append((leftMotorCurrentStatus, rightMotorCurrentStatus))
 
-            if running_status == STATUS.ALL_GOOD:
-                setWalkStraight()
-            elif running_status == STATUS.LEFT_SHIFTED:
-                setTurnLeftSlightly()
-            elif running_status == STATUS.RIGHT_SHIFTED:
-                setTurnRightSlightly()
-            elif running_status == STATUS.TO_TURN:
-                setTurnLeft90Degrees()
-            else:
-                raise Exception("I don't know what to do")
+            if   isinstance(running_status, ALL_GOOD):      setWalkStraight()
+            elif isinstance(running_status, LEFT_SHIFTED):  setTurnLeftSlightly()
+            elif isinstance(running_status, RIGHT_SHIFTED): setTurnRightSlightly()
+            elif isinstance(running_status, TO_TURN):       setTurnLeft90Degrees()
+            else:                                           raise Exception("I don't know what to do")
+
     except KeyboardInterrupt:
         BP.reset_all()
        
