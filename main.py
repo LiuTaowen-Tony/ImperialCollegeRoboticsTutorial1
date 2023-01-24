@@ -13,6 +13,7 @@ BP = BrickPi3()
 LEFT_MOTOR_PORT = BP.PORT_A
 RIGHT_MOTOR_PORT = BP.PORT_B
 
+
 def setWalkStraight(*, speed: int = 30) -> None:
     if speed > 70:
         print("Speed is too high")
@@ -37,26 +38,29 @@ def main():
 
     history = []
 
-    while True:
-        time.sleep(0.2)
+    try:
+        while True:
+            time.sleep(0.2)
 
-        leftMotorCurrentStatus = BP.get_motor_status(LEFT_MOTOR_PORT)
-        rightMotorCurrentStatus = BP.get_motor_status(RIGHT_MOTOR_PORT)
-        running_status = checkStatus(leftMotorCurrentStatus, rightMotorCurrentStatus, history)
+            leftMotorCurrentStatus = BP.get_motor_status(LEFT_MOTOR_PORT)
+            rightMotorCurrentStatus = BP.get_motor_status(RIGHT_MOTOR_PORT)
+            running_status = checkStatus(leftMotorCurrentStatus, rightMotorCurrentStatus, history)
 
-        # probably we need history in future tasks
-        history.append((leftMotorCurrentStatus, rightMotorCurrentStatus))
+            # probably we need history in future tasks
+            history.append((leftMotorCurrentStatus, rightMotorCurrentStatus))
 
-        if running_status == STATUS.ALL_GOOD:
-            setWalkStraight()
-        elif running_status == STATUS.LEFT_SHIFTED:
-            setTurnLeftSlightly()
-        elif running_status == STATUS.RIGHT_SHIFTED:
-            setTurnRightSlightly()
-        elif running_status == STATUS.TO_TURN:
-            setTurnLeft90Degrees()
-        else:
-            raise Exception("I don't know what to do")
-        
+            if running_status == STATUS.ALL_GOOD:
+                setWalkStraight()
+            elif running_status == STATUS.LEFT_SHIFTED:
+                setTurnLeftSlightly()
+            elif running_status == STATUS.RIGHT_SHIFTED:
+                setTurnRightSlightly()
+            elif running_status == STATUS.TO_TURN:
+                setTurnLeft90Degrees()
+            else:
+                raise Exception("I don't know what to do")
+    except KeyboardInterrupt:
+        BP.reset_all()
+       
         
         
