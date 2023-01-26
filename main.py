@@ -1,5 +1,4 @@
 import time
-from enum import Enum
 from dataclasses import dataclass
 
 from brickpi3 import BrickPi3
@@ -17,16 +16,16 @@ class RIGHT_SHIFTED(STATUS):
 
 BP = BrickPi3()
 
-LEFT_MOTOR_PORT = BP.PORT_A
-RIGHT_MOTOR_PORT = BP.PORT_B
+LEFT_MOTOR_PORT = BP.PORT_D
+RIGHT_MOTOR_PORT = BP.PORT_C
 
 
 def setWalkStraight(*, speed: int = 30) -> None:
     if speed > 70:
         print("Speed is too high")
         speed = 70
-    BP.set_motor_power(LEFT_MOTOR_PORT, speed)
-    BP.set_motor_power(RIGHT_MOTOR_PORT, speed)
+    BP.velocity_demand(LEFT_MOTOR_PORT, speed)
+    BP.velocity_demand(RIGHT_MOTOR_PORT, speed)
     
 
 def setTurnLeftSlightly(*, speed: int = 30) -> None:
@@ -39,7 +38,8 @@ def setTurnLeft90Degrees(*, speed: int = 30) -> None:
     pass
 
 def checkStatus(leftMotorCurrentStatus, rightMotorCurrentStatus, history) -> STATUS:
-    pass
+    return ALL_GOOD()
+    
 
 def main():
 
@@ -62,8 +62,13 @@ def main():
             elif isinstance(running_status, TO_TURN):       setTurnLeft90Degrees()
             else:                                           raise Exception("I don't know what to do")
 
+    except Exception:
+        BP.reset_all()
     except KeyboardInterrupt:
+        BP.set_motor_power(LEFT_MOTOR_PORT, 0)
+        BP.set_motor_power(RIGHT_MOTOR_PORT, 0)
         BP.reset_all()
        
         
-        
+if __name__ == "__main__":
+    main() 
