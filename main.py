@@ -1,72 +1,91 @@
 import time
 from dataclasses import dataclass
+from enum import Enum
 
 from brickpi3 import BrickPi3
 
-class STATUS: pass
-class ALL_GOOD(STATUS): pass
-class TO_TURN(STATUS): pass
-@dataclass
-class LEFT_SHIFTED(STATUS):
-    value: float
-@dataclass
-class RIGHT_SHIFTED(STATUS):
-    value: float
+class Instruction(Enum):
+    WALK_STRAIGHT = 0
+    TURN_LEFT = 1
+    STOP = 2
+
 
 
 BP = BrickPi3()
 
-LEFT_MOTOR_PORT = BP.PORT_D
-RIGHT_MOTOR_PORT = BP.PORT_C
+LEFT_MOTOR_PORT = BP.PORT_C
+RIGHT_MOTOR_PORT = BP.PORT_D
+
+class MoveStatus(Enum):
+    WALK_STRAIGHT = 0
+    TURN_LEFT = 1
+    STOP = 2
+
+class InternalState:
+    def __init__(self, l, r, cms):
+        # cms : current move status
+        self.l_mileage_cms = l
+        self.r_mileage_cms = r
+        self.cms = cms
+        self.segment = 0
+        self.round = 0
 
 
 def setWalkStraight(*, speed: int = 30) -> None:
     if speed > 70:
         print("Speed is too high")
         speed = 70
-    BP.velocity_demand(LEFT_MOTOR_PORT, speed)
-    BP.velocity_demand(RIGHT_MOTOR_PORT, speed)
+    BP.set_motor_dps(LEFT_MOTOR_PORT, 360)
+    BP.set_motor_dps(RIGHT_MOTOR_PORT, 360)
     
-
-def setTurnLeftSlightly(*, speed: int = 30) -> None:
-    pass
-
-def setTurnRightSlightly(*, speed: int = 30) -> None:
-    pass
 
 def setTurnLeft90Degrees(*, speed: int = 30) -> None:
-    pass
+    BP.set_motor_dps(LEFT_MOTOR_PORT, 180)
+    BP.set_motor_dps(RIGHT_MOTOR_PORT, -180)
 
-def checkStatus(leftMotorCurrentStatus, rightMotorCurrentStatus, history) -> STATUS:
-    return ALL_GOOD()
-    
+def setStop() -> None:
+    BP.set_motor_power(LEFT_MOTOR_PORT, 0)
+    BP.set_motor_power(RIGHT_MOTOR_PORT, 0)
+
+
 
 def main():
 
-    history = []
+    current_status = InternalState()
 
     try:
         while True:
-            time.sleep(0.2)
+            time.sleep(0.05)
 
-            leftMotorCurrentStatus  = BP.get_motor_status(LEFT_MOTOR_PORT)
-            rightMotorCurrentStatus = BP.get_motor_status(RIGHT_MOTOR_PORT)
-            running_status          = checkStatus(leftMotorCurrentStatus, rightMotorCurrentStatus, history)
+            l_status    = BP.get_motor_status(LEFT_MOTOR_PORT)
+            r_status    = BP.get_motor_status(RIGHT_MOTOR_PORT)
+#            current_phase_l_mileage = 
+            _, _, l_mileage, _ = l_status
+            _, _, r_mileage, _ = r_status
+            print(l_status, r_status)
 
             # probably we need history in future tasks
-            history.append((leftMotorCurrentStatus, rightMotorCurrentStatus))
+            if current_status.cms == MoveStatus.WALK_STRAIGHT:
+                if l_mileage - current_status.l_mileage_cms >= 762.5:
+                    current_status.cms = MoveStatus.TURN_LEFT
+                    current_status.l_mileage_cms = l_mileage
+                    current_status.r_mileage_cms = r_mileage
+                    setTurnLeft90Degrees()
+            elif current_status.cms == MoveStatus.TURN_LEFT:
+                if l_mileage - current_status.l_mileage_cms >= 180:
+                    current_status.cms = MoveStatus.GO_STRAIGHT
+                    current_status.l_mileage_cms = l_mileage
+                    current_status.r_mileage_cms = r_mileage
+                    setWalkStraight()
+            else:                                          
+                raise Exception("I don't know what to do")
 
-            if   isinstance(running_status, ALL_GOOD):      setWalkStraight()
-            elif isinstance(running_status, LEFT_SHIFTED):  setTurnLeftSlightly()
-            elif isinstance(running_status, RIGHT_SHIFTED): setTurnRightSlightly()
-            elif isinstance(running_status, TO_TURN):       setTurnLeft90Degrees()
-            else:                                           raise Exception("I don't know what to do")
-
-    except Exception:
+    except Exception as e:
+        print(e)
         BP.reset_all()
+        setStop()
     except KeyboardInterrupt:
-        BP.set_motor_power(LEFT_MOTOR_PORT, 0)
-        BP.set_motor_power(RIGHT_MOTOR_PORT, 0)
+        setStop()
         BP.reset_all()
        
         
