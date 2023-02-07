@@ -32,9 +32,6 @@ class InternalState:
 
 
 def setWalkStraight() -> None:
-    if speed > 70:
-        print("Speed is too high")
-        speed = 70
     BP.set_motor_dps(LEFT_MOTOR_PORT, 360)
     BP.set_motor_dps(RIGHT_MOTOR_PORT, 360)
     
@@ -52,13 +49,14 @@ def setStop() -> None:
 def main():
 
     current_status = InternalState(
-        l = BP.get_motor_status(LEFT_MOTOR_PORT), 
-        r = BP.get_motor_status(RIGHT_MOTOR_PORT),
+        l = BP.get_motor_status(LEFT_MOTOR_PORT)[2], 
+        r = BP.get_motor_status(RIGHT_MOTOR_PORT)[2],
         cms = MoveStatus.WALK_STRAIGHT)
-
+    setWalkStraight()
+    
     try:
         while True:
-            time.sleep(0.05)
+            time.sleep(0.1)
 
             l_status = BP.get_motor_status(LEFT_MOTOR_PORT)
             r_status = BP.get_motor_status(RIGHT_MOTOR_PORT)
@@ -68,17 +66,27 @@ def main():
 
             # probably we need history in future tasks
             if current_status.cms == MoveStatus.WALK_STRAIGHT:
-                if l_mileage - current_status.l_mileage_cms >= 762.5:
+                if l_mileage - current_status.l_mileage_cms >= 823:
+                    setStop()
+                    time.sleep(1)
                     current_status.cms = MoveStatus.TURN_LEFT
                     current_status.l_mileage_cms = l_mileage
                     current_status.r_mileage_cms = r_mileage
                     setTurnLeft90Degrees()
+                    current_status.round += 1
             elif current_status.cms == MoveStatus.TURN_LEFT:
-                if l_mileage - current_status.l_mileage_cms >= 180:
+                if l_mileage - current_status.l_mileage_cms >= 258:
+                    setStop()
+                    time.sleep(1)
                     current_status.cms = MoveStatus.WALK_STRAIGHT
                     current_status.l_mileage_cms = l_mileage
                     current_status.r_mileage_cms = r_mileage
-                    setWalkStraight()
+                    
+                    if current_status.round == 4:
+                        setStop()
+                        exit()
+                    else:
+                        setWalkStraight()
             else:                                          
                 raise Exception("I don't know what to do")
 
@@ -93,3 +101,4 @@ def main():
         
 if __name__ == "__main__":
     main() 
+
