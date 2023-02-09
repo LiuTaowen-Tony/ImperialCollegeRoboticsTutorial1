@@ -67,10 +67,6 @@ class Robot:
         # cms : current move status
         self.l_mileage_cms = l
         self.r_mileage_cms = r
-        self.cms = cms
-        self.segment = 0
-        self.round = 0
-        self.step = 0
         self.samples = [(0, 0, 0, 1 / SAMPLE_SIZE) for _ in range(SAMPLE_SIZE)]
         self.history = self.samples
         
@@ -97,11 +93,7 @@ class Robot:
     def go_straight_dist(self, dist=10):
         try:
             while True:
-                l_status = BP.get_motor_status(LEFT_MOTOR_PORT)
-                r_status = BP.get_motor_status(RIGHT_MOTOR_PORT)
-                _, _, l_mileage, _ = l_status
-                _, _, r_mileage, _ = r_status
-                print(l_status, r_status)
+                l_mileage, r_mileage = self.get_mileages()
                 
                 if l_mileage - self.l_mileage_cms >= ONE_CM_DIST * dist:
                     setStop()
@@ -127,15 +119,18 @@ class Robot:
             setStop()
         except KeyboardInterrupt:
             setStop()
+
+    def get_mileages(self):
+        l_status = BP.get_motor_status(LEFT_MOTOR_PORT)
+        r_status = BP.get_motor_status(RIGHT_MOTOR_PORT)
+        _, _, l_mileage, _ = l_status
+        _, _, r_mileage, _ = r_status
+        return l_mileage,r_mileage
     
     def turn(self, angle_rad=0.5):
         try:
             while True:
-                l_status = BP.get_motor_status(LEFT_MOTOR_PORT)
-                r_status = BP.get_motor_status(RIGHT_MOTOR_PORT)
-                _, _, l_mileage, _ = l_status
-                _, _, r_mileage, _ = r_status
-                print(l_status, r_status)
+                l_mileage, r_mileage = self.get_mileages()
                 
                 if l_mileage - self.l_mileage_cms >= PI_TURN * angle_rad:
                     setStop()
