@@ -92,7 +92,7 @@ class Robot:
             theta_y += math.sin(tt) * ww 
         return [x, y, math.atan2(theta_y, theta_x)]
         
-    def goto(self, x, y):
+    def navigateToWaypoint(self, x, y):
         cur_x, cur_y, theta = self.cur_pos()
         angle = math.atan2(y - cur_y, x - cur_x)
         dtheta = ((angle - theta) / math.pi) % 2
@@ -190,7 +190,7 @@ def main():
         r = BP.get_motor_status(RIGHT_MOTOR_PORT)[2],
         cms = MoveStatus.WALK_STRAIGHT)
     for pos in nav_points:
-        current_status.goto(pos[0], pos[1])
+        current_status.navigateToWaypoint(pos[0], pos[1])
         time.sleep(0.5)
 
 
